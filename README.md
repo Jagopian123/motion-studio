@@ -43,6 +43,8 @@ Build produksi ada di `dist/`. Playwright memakai Chrome desktop yang terpasang 
 
 4. Klik **Save and Deploy**. Cloudflare memasang dependensi, menjalankan build, lalu menyajikan isi `dist/`. Setelah deploy berhasil, buka URL HTTPS `pages.dev` yang tertera di dashboard. Push berikutnya ke `main` memicu deploy produksi secara otomatis. Ekspor MP4 tetap berlangsung di browser perangkat. [Panduan integrasi Git Cloudflare Pages](https://developers.cloudflare.com/pages/get-started/git-integration/)
 
+Jika dashboard menampilkan **Deploy command** seperti `npx wrangler deploy`, Anda berada di pengaturan Workers. Buka **Workers & Pages → Create application → Pages → Connect to Git** untuk membuat proyek Pages dengan **Build output directory** `dist`. [Pengaturan Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
+
 ## Tes fisik Chrome pada POCO F6
 
 1. Buka URL `pages.dev` melalui HTTPS. Catat model, versi Android/HyperOS, dan versi Chrome dari `chrome://version`. Saat mengetes dari LAN, gunakan HTTPS tepercaya. Alamat IP LAN lewat HTTP tidak menyediakan secure context yang diperlukan encoder.

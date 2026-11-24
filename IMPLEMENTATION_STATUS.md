@@ -40,6 +40,12 @@ Mediabunny membaca kembali file unduhan untuk memeriksa container MP4, video AVC
 
 Keduanya memakai preferensi `prefer-hardware` dan proses render selesai dengan jaringan browser offline setelah preflight. Build memuat aset lokal dari origin Vite. Versi Remotion ini dapat mencoba mengirim telemetri lisensi saat online. Jalur fallback pemilihan resolusi diuji dengan penolakan 720p yang disimulasikan. Mode fallback encoder saat render tidak terpicu pada dua ekspor desktop ini. [Telemetri Remotion](https://www.remotion.dev/docs/telemetry)
 
+### Perbaikan instalasi Cloudflare
+
+Log Cloudflare untuk commit `1cc48ab` berhenti pada `npm clean-install --progress=false` dengan `EUSAGE` karena dua dependensi transitif opsional yang diperlukan oleh binding WASM Rolldown belum tercatat di lockfile. Error yang sama direproduksi pada Ubuntu 24.04 x64 (WSL), Node.js 24.13.0, dan npm 11.21.3. `npm install --package-lock-only --ignore-scripts --no-audit --no-fund` menghasilkan entri `@emnapi/core` dan `@emnapi/runtime` versi `2.0.0-beta.2`. Versi paket yang sudah terkunci tetap sama.
+
+Dengan lockfile yang diperbaiki, `npm clean-install --progress=false` lulus di Ubuntu (223 paket terpasang, audit melaporkan 0 kerentanan), diikuti `npm run build` (menghasilkan `dist/index.html`), `npm run typecheck`, `npm run lint`, dan `npm test` (8 test lulus). Verifikasi deployment HTTPS tetap tercatat pada tabel berikut.
+
 ## Gate perangkat
 
 | Pengujian | Status |
