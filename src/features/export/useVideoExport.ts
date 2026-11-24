@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import type { StoryCompositionProps } from '../../engine/composition/StoryComposition';
+import { getClip } from '../../engine/composition/clip';
+import { audioSource, validAudioSettings, type LocalAudioTrack } from '../audio/audio-track';
 import { renderVideo } from './browser-renderer';
-import { canRetryWithBrowserEncoder, describeRenderError, type EncoderPreference, type Preset } from './settings';
+import { keepScreenAwake } from './keep-screen-awake';
+import { canRetryWithBrowserEncoder, describeRenderError, estimateRemaining, type EncoderPreference, type Preset } from './settings';
 
 type ExportState =
   | { phase: 'idle' }
-  | { phase: 'rendering'; progress: number; frames: number; encoder: EncoderPreference; fallback: boolean; cancelling: boolean }
+  | { phase: 'rendering'; progress: number; frames: number; elapsed: number; eta: number | null; encoder: EncoderPreference; fallback: boolean; cancelling: boolean }
   | { phase: 'cancelled' }
   | { phase: 'error'; help: string; detail: string }
-  | { phase: 'done'; url: string; fileSize: number; elapsed: number; preset: Preset; encoder: EncoderPreference; fallback: boolean };
+  | { phase: 'done'; url: string; fileSize: number; elapsed: number; frames: number; preset: Preset; encoder: EncoderPreference; fallback: boolean; withAudio: boolean };
 
-export function useVideoExport(inputProps: StoryCompositionProps) {
+export function useVideoExport() {
   const [state, setState] = useState<ExportState>({ phase: 'idle' });
   const activeJob = useRef<AbortController | null>(null);
   const download = useRef<string | null>(null);
@@ -20,23 +23,48 @@ export function useVideoExport(inputProps: StoryCompositionProps) {
     if (download.current) URL.revokeObjectURL(download.current);
   }, []);
 
-  const start = async (preset: Preset, preference: EncoderPreference) => {
+  const start = async (project: StoryCompositionProps['project'], audio: LocalAudioTrack[], preset: Preset, preference: EncoderPreference) => {
     if (activeJob.current) return;
     if (download.current) URL.revokeObjectURL(download.current);
     download.current = null;
     const job = new AbortController();
     activeJob.current = job;
     const startTime = performance.now();
-
-    const attempt = (encoder: EncoderPreference, fallback: boolean) => {
-      setState({ phase: 'rendering', progress: 0, frames: 0, encoder, fallback, cancelling: false });
-      return renderVideo(inputProps, preset, encoder, job.signal, ({ encodedFrames, progress }) => {
-        if (job.signal.aborted) return;
-        setState({ phase: 'rendering', progress, frames: encodedFrames, encoder, fallback, cancelling: false });
-      });
-    };
+    const urls: string[] = [];
+    const screenCleanup = keepScreenAwake();
+    function contextLost(event: Event) {
+      const canvas = event.target;
+      if (canvas instanceof HTMLCanvasElement && canvas.closest('[data-motion-composition]') && !canvas.closest('.preview-frame')) {
+        job.abort(new Error('WebGL context lost saat mengekspor.'));
+      }
+    }
+    document.addEventListener('webglcontextlost', contextLost, true);
+    const timer = window.setInterval(() => {
+      setState((previous) => previous.phase === 'rendering' ? { ...previous, elapsed: performance.now() - startTime } : previous);
+    }, 250);
 
     try {
+      const { durationInFrames } = getClip(project);
+      const inputProps = {
+        project: structuredClone(project),
+        audio: audio.map((track) => {
+          if (!validAudioSettings(track, durationInFrames)) throw new Error('Posisi mulai audio berada di luar proyek.');
+          const url = URL.createObjectURL(track.blob);
+          urls.push(url);
+          return audioSource(track, url);
+        }),
+      };
+      const attempt = (encoder: EncoderPreference, fallback: boolean) => {
+        const attemptTime = performance.now();
+        setState({ phase: 'rendering', progress: 0, frames: 0, elapsed: attemptTime - startTime, eta: null, encoder, fallback, cancelling: false });
+        return renderVideo(inputProps, preset, encoder, job.signal, ({ encodedFrames, progress }) => {
+          if (job.signal.aborted) return;
+          const now = performance.now();
+          const frames = Math.min(encodedFrames, durationInFrames);
+          const eta = estimateRemaining(now - attemptTime, frames, durationInFrames);
+          setState({ phase: 'rendering', progress, frames, elapsed: now - startTime, eta, encoder, fallback, cancelling: false });
+        });
+      };
       let encoder = preference;
       let blob: Blob;
       try {
@@ -49,11 +77,16 @@ export function useVideoExport(inputProps: StoryCompositionProps) {
       job.signal.throwIfAborted();
       const url = URL.createObjectURL(blob);
       download.current = url;
-      setState({ phase: 'done', url, fileSize: blob.size, elapsed: performance.now() - startTime, preset, encoder, fallback: encoder !== preference });
+      setState({ phase: 'done', url, fileSize: blob.size, elapsed: performance.now() - startTime, frames: durationInFrames, preset, encoder, fallback: encoder !== preference, withAudio: audio.length > 0 });
     } catch (error) {
-      if (job.signal.aborted) setState({ phase: 'cancelled' });
-      else setState({ phase: 'error', help: describeRenderError(error), detail: error instanceof Error ? error.message : String(error) });
+      const failure: unknown = job.signal.aborted ? job.signal.reason : error;
+      if (job.signal.aborted && failure instanceof DOMException && failure.name === 'AbortError') setState({ phase: 'cancelled' });
+      else setState({ phase: 'error', help: describeRenderError(failure), detail: failure instanceof Error ? failure.message : String(failure) });
     } finally {
+      window.clearInterval(timer);
+      screenCleanup();
+      document.removeEventListener('webglcontextlost', contextLost, true);
+      urls.forEach((url) => URL.revokeObjectURL(url));
       activeJob.current = null;
     }
   };

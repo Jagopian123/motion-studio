@@ -1,4 +1,6 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { PresetModel } from '../assets/PresetModel';
+import { createPresetResources, type PresetResources } from '../assets/preset-resources';
 import type { StoryNode } from '../schema/story-v1';
 import { evaluateTransform } from '../timeline/animation';
 
@@ -17,8 +19,10 @@ function PrimitiveGeometry({ geometry }: { geometry: Geometry }) {
 
 type ChildNodes = Map<string | undefined, StoryNode[]>;
 
-function NodeBranch({ node, childrenByParent, frame }: { node: StoryNode; childrenByParent: ChildNodes; frame: number }) {
-  if (node.kind === 'preset') throw new Error(`Preset "${node.preset}" baru dapat dirender setelah Sesi 3.`);
+type SceneGraph = { childrenByParent: ChildNodes; resources: PresetResources | null; frame: number; fps: number };
+
+function NodeBranch({ node, ...graph }: SceneGraph & { node: StoryNode }) {
+  const { childrenByParent, frame, fps, resources } = graph;
   const { rotation, ...transform } = evaluateTransform(node, frame);
   return (
     <group name={node.id} {...transform} rotation={[...rotation, 'XYZ']}>
@@ -28,14 +32,15 @@ function NodeBranch({ node, childrenByParent, frame }: { node: StoryNode; childr
           <meshStandardMaterial {...node.material} />
         </mesh>
       )}
+      {node.kind === 'preset' && <PresetModel node={node} frame={frame} fps={fps} resources={resources!} />}
       {childrenByParent.get(node.id)?.map((child) => (
-        <NodeBranch key={child.id} node={child} childrenByParent={childrenByParent} frame={frame} />
+        <NodeBranch key={child.id} node={child} {...graph} />
       ))}
     </group>
   );
 }
 
-export function SceneNodes({ nodes, frame }: { nodes: readonly StoryNode[]; frame: number }) {
+export function SceneNodes({ nodes, frame, fps }: { nodes: readonly StoryNode[]; frame: number; fps: number }) {
   const childrenByParent = useMemo(() => {
     const tree: ChildNodes = new Map();
     for (const node of nodes) {
@@ -45,8 +50,10 @@ export function SceneNodes({ nodes, frame }: { nodes: readonly StoryNode[]; fram
     }
     return tree;
   }, [nodes]);
+  const resources = useMemo(() => createPresetResources(nodes), [nodes]);
+  useEffect(() => () => resources?.dispose(), [resources]);
 
   return childrenByParent.get(undefined)?.map((node) => (
-    <NodeBranch key={node.id} node={node} childrenByParent={childrenByParent} frame={frame} />
+    <NodeBranch key={node.id} node={node} childrenByParent={childrenByParent} frame={frame} fps={fps} resources={resources} />
   ));
 }

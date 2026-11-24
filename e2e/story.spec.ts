@@ -5,6 +5,7 @@ import { getPresets } from '../src/features/export/settings';
 
 async function applyDemo(page: Page, landscape = false) {
   await page.goto('/');
+  await page.getByText('Muat demo', { exact: true }).click();
   await page.getByRole('button', { name: 'Isi dengan demo JSON' }).click();
   const editor = page.getByRole('textbox', { name: 'JSON cerita' });
   if (landscape) {
@@ -55,13 +56,14 @@ test('JSON import, path errors and deterministic scene seek on a 360px viewport'
   await page.getByRole('button', { name: 'Terapkan JSON' }).click();
   await expect(page.getByRole('alert')).toContainText('scenes[1].camera.keyframes[0].extra');
 
-  await editor.fill(await readFile('example-story.json', 'utf8'));
+  await editor.fill((await readFile('example-story.json', 'utf8')).replace('"preset": "robot"', '"preset": "spaceship"'));
   await page.getByRole('button', { name: 'Terapkan JSON' }).click();
   await expect(page.getByRole('alert')).toContainText('scenes[0].nodes[0].preset');
-  await expect(page.getByRole('alert')).toContainText('Preset "robot" dikenali');
+  await expect(page.getByRole('alert')).toContainText('Preset v1 yang didukung');
   await expect(page.getByRole('heading', { name: 'Observatorium Prisma' })).toBeVisible();
 
   test.skip(await diagnostic(page, 'WebGL2').textContent() !== 'Tersedia', 'Browser has no WebGL2 context.');
+  await page.getByRole('tab', { name: 'Scenes' }).click();
   const canvas = page.locator('.preview-frame canvas');
   const slider = page.getByRole('slider', { name: 'Posisi frame preview' });
   const first = page.getByRole('button', { name: /Prisma bangkit/ });
@@ -92,6 +94,8 @@ test('JSON import, path errors and deterministic scene seek on a 360px viewport'
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(errors).toEqual([]);
 
+  await page.getByRole('tab', { name: 'Story' }).click();
+  await page.getByText('Muat demo', { exact: true }).click();
   await page.getByRole('button', { name: 'Gunakan Orbit 01' }).click();
   await expect(page.getByRole('heading', { name: 'Orbit 01' })).toBeVisible();
   await expect(slider).toHaveAttribute('max', '149');
@@ -107,11 +111,12 @@ for (const landscape of [false, true]) {
     const presets = getPresets(landscape ? '16:9' : '9:16');
     const selected = landscape ? presets[1] : presets[0];
     test.skip(await diagnostic(page, `H.264 ${selected.id}${fps}`).textContent() !== 'Tersedia', `Native H.264 ${selected.id} at ${fps} FPS or WebGL2 is unavailable.`);
+    await page.getByRole('button', { name: 'Buka dialog ekspor' }).click();
     const radio = page.getByRole('radio', { name: new RegExp(`${selected.width} × ${selected.height}`) });
     await radio.check();
     await page.context().setOffline(true);
     await page.getByRole('button', { name: 'Ekspor MP4' }).click();
-    await expect(page.getByRole('button', { name: 'Terapkan JSON' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Terapkan JSON', includeHidden: true })).toBeDisabled();
     const link = page.getByRole('link', { name: 'Unduh MP4' });
     await expect(link).toBeVisible({ timeout: 120_000 });
     const [download] = await Promise.all([page.waitForEvent('download'), link.click()]);

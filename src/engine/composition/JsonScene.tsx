@@ -39,7 +39,7 @@ function CaptionOverlay({ caption, width, height }: { caption: Caption; width: n
 
 export function JsonScene({ scene }: { scene: StoryScene }) {
   const frame = useCurrentFrame();
-  const { width, height } = useVideoConfig();
+  const { width, height, fps } = useVideoConfig();
   const { world, lighting } = scene;
   const caption = getCaptionAtFrame(scene.captions, frame);
   return (
@@ -57,7 +57,7 @@ export function JsonScene({ scene }: { scene: StoryScene }) {
             <meshStandardMaterial color={world.groundColor} roughness={1} />
           </mesh>
         )}
-        <SceneNodes nodes={scene.nodes} frame={frame} />
+        <SceneNodes nodes={scene.nodes} frame={frame} fps={fps} />
       </ThreeCanvas>
       {caption && <CaptionOverlay caption={caption} width={width} height={height} />}
     </AbsoluteFill>

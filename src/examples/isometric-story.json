@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "title": "Laboratorium Gerak",
+  "aspectRatio": "1:1",
+  "fps": 24,
+  "scenes": [
+    {
+      "id": "motion-lab",
+      "name": "Tiga cara bergerak",
+      "durationFrames": 144,
+      "world": { "background": "#183343", "ground": false, "groundColor": "#183343" },
+      "lighting": {
+        "ambient": { "color": "#F4EDDF", "intensity": 0.72 },
+        "directional": { "color": "#FFF1D9", "intensity": 2.2, "position": [4, 7, 5] },
+        "fill": { "color": "#B9DEF5", "intensity": 0.85, "position": [-5, 2, -4] }
+      },
+      "camera": {
+        "type": "orthographic",
+        "keyframes": [
+          { "frame": 0, "position": [5.5, 5.5, 8], "target": [0, 0.65, 0], "orthoSize": 6.7 },
+          { "frame": 143, "position": [4.5, 6, 8], "target": [0, 0.65, 0], "orthoSize": 6.5, "ease": "easeInOut" }
+        ]
+      },
+      "nodes": [
+        {
+          "id": "island",
+          "kind": "group",
+          "scale": [0.95, 0.95, 0.95],
+          "tracks": [
+            {
+              "property": "rotation",
+              "keyframes": [
+                { "frame": 0, "value": [0, -6, 0] },
+                { "frame": 143, "value": [0, 10, 0], "ease": "easeInOut" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "base", "parentId": "island", "kind": "mesh",
+          "geometry": { "type": "box", "size": [4.9, 0.38, 4.6] },
+          "material": { "color": "#325D63" },
+          "position": [0, -0.11, 0]
+        },
+        {
+          "id": "garden", "parentId": "island", "kind": "mesh",
+          "geometry": { "type": "box", "size": [4.76, 0.08, 4.46] },
+          "material": { "color": "#769578" },
+          "position": [0, 0.12, 0]
+        },
+        {
+          "id": "path", "parentId": "island", "kind": "mesh",
+          "geometry": { "type": "box", "size": [4.60, 0.024, 1.16] },
+          "material": { "color": "#D1AC7C" },
+          "position": [0, 0.158, 0.89]
+        },
+        {
+          "id": "teacher", "parentId": "island", "kind": "preset", "preset": "human",
+          "position": [-1.24, 0.17, 0.50], "rotation": [0, 20, 0], "scale": [0.87, 0.87, 0.87],
+          "action": { "name": "wave", "speed": 0.8 }
+        },
+        {
+          "id": "robot", "parentId": "island", "kind": "preset", "preset": "robot",
+          "position": [0.23, 0.17, -0.05], "rotation": [0, 24, 0], "scale": [0.77, 0.77, 0.77],
+          "colors": { "primary": "#CFE5E8", "secondary": "#455F89", "accent": "#F2BA61" },
+          "action": { "name": "jump", "speed": 0.8 }
+        },
+        {
+          "id": "cat", "parentId": "island", "kind": "preset", "preset": "cat",
+          "rotation": [0, 58, 0], "scale": [0.87, 0.87, 0.87],
+          "action": { "name": "walk", "speed": 1.1 },
+          "tracks": [
+            {
+              "property": "position",
+              "keyframes": [
+                { "frame": 0, "value": [0.23, 0.17, 1.08] },
+                { "frame": 143, "value": [1.62, 0.17, 1.73] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "kitten", "parentId": "island", "kind": "preset", "preset": "cat",
+          "position": [-1.72, 0.16, 1.50], "rotation": [0, 16, 0], "scale": [0.54, 0.54, 0.54],
+          "colors": { "primary": "#A7B9C5", "secondary": "#EFE8D5" },
+          "action": { "name": "idle", "speed": 1 }
+        },
+        {
+          "id": "tree", "parentId": "island", "kind": "preset", "preset": "tree",
+          "position": [-1.55, 0.16, -1.40], "scale": [0.88, 0.88, 0.88]
+        },
+        {
+          "id": "house", "parentId": "island", "kind": "preset", "preset": "house",
+          "position": [0.65, 0.16, -1.40], "scale": [0.77, 0.77, 0.77]
+        },
+        {
+          "id": "rock", "parentId": "island", "kind": "preset", "preset": "rock",
+          "position": [1.66, 0.16, -0.53], "rotation": [0, -18, 0], "scale": [0.68, 0.68, 0.68]
+        }
+      ],
+      "captions": [
+        { "startFrame": 0, "endFrame": 48, "text": "Melambai: bahu mengangkat lengan, lalu siku mengayun.", "placement": "top" },
+        { "startFrame": 48, "endFrame": 96, "text": "Melompat: tubuh merendah, terangkat, lalu mendarat.", "placement": "top" },
+        { "startFrame": 96, "endFrame": 144, "text": "Berjalan: kaki bergerak bergantian sambil maju.", "placement": "top" }
+      ]
+    }
+  ]
+}

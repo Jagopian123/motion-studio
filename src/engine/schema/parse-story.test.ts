@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import reference from '../../../example-story.json?raw';
 import demo from '../../examples/primitive-story.json?raw';
+import isometric from '../../examples/isometric-story.json?raw';
+import { presets } from '../assets/presets';
 import { formatStoryPath, MAX_STORY_BYTES, parseStory, validateStoryV1 } from './parse-story';
+import { actionNames, characterPresets, presetNames } from './story-v1';
 
 const world = { background: '#123456', ground: true, groundColor: '#223344' };
 const camera = { type: 'perspective', keyframes: [{ frame: 0, position: [1, 2, 3], target: [0, 1, 0] }] };
@@ -33,15 +37,31 @@ describe('strict JSON v1', () => {
     expect(group).not.toHaveProperty('position');
   });
 
-  it('validates both fixtures and reports known presets unavailable to the current engine', () => {
+  it('imports the supported fixtures and covers the v1 preset and action vocabulary', () => {
     expect(parseStory(demo)).toMatchObject({ ok: true, project: { title: 'Observatorium Prisma' } });
-    expect(validateStoryV1(JSON.parse(reference))).toMatchObject({ ok: true });
-    const result = parseStory(reference);
-    if (result.ok) throw new Error('The preset story was unexpectedly accepted for rendering.');
-    expect(result.issues[0]).toMatchObject({
-      path: ['scenes', 0, 'nodes', 0, 'preset'],
-      message: expect.stringMatching(/robot.*Sesi 3/),
-    });
+    const story = parseStory(reference);
+    const lab = parseStory(isometric);
+    if (!story.ok || !lab.ok) throw new Error(JSON.stringify({ story, lab }));
+    expect(story.project.fps).toBe(30);
+    expect(story.project.scenes.map((scene) => scene.durationFrames)).toEqual([150, 150, 150]);
+    const nodes = lab.project.scenes.flatMap((scene) => scene.nodes)
+      .filter((node) => node.kind === 'preset');
+    expect(new Set(nodes.map((node) => node.preset))).toEqual(new Set(presetNames));
+    expect(new Set(nodes.flatMap((node) => node.action ? [node.action.name] : []))).toEqual(new Set(actionNames));
+  });
+
+  it('validates all AI guide examples and keeps preset and action tables in sync', () => {
+    const guide = readFileSync(new URL('../../../public/ai-guide.md', import.meta.url), 'utf8');
+    const examples = Array.from(guide.matchAll(/```json\r?\n([\s\S]*?)```/g), ([, json]) => json!);
+    expect(examples.length).toBeGreaterThan(0);
+    for (const example of examples) expect(parseStory(example)).toMatchObject({ ok: true });
+
+    for (const preset of presetNames) {
+      const { primary, secondary, accent } = presets[preset].colors;
+      const action = characterPresets.some((name) => name === preset) ? 'Ya' : '—';
+      expect(guide).toContain(`| \`${preset}\` | \`${primary}\` / \`${secondary}\` / \`${accent}\` | ${action} |`);
+    }
+    for (const action of actionNames) expect(guide).toContain(`| \`${action}\` |`);
   });
 
   it('rejects bad syntax and oversize UTF-8 input before parsing', () => {

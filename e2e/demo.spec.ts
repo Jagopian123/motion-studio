@@ -18,23 +18,32 @@ test('mobile preview plays and seeks without horizontal scrolling', async ({ pag
   await openDemo(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   test.skip(await diagnostic(page, 'WebGL2').textContent() !== 'Tersedia', 'Browser has no WebGL2 context.');
-  await expect(page.locator('.preview-frame canvas')).toBeVisible();
+  const canvas = page.locator('.preview-frame canvas');
+  await expect(canvas).toBeVisible();
+  await expect(canvas).toHaveJSProperty('width', 360);
+  await expect(canvas).toHaveJSProperty('height', 640);
   await page.getByRole('button', { name: 'Putar preview' }).click();
   await expect.poll(async () => Number(await page.getByRole('slider').inputValue())).toBeGreaterThan(0);
   await page.getByRole('button', { name: 'Jeda preview' }).click();
   await page.getByRole('slider').press('End');
   await expect(page.getByRole('slider')).toHaveValue('149');
+  await page.setViewportSize({ width: 800, height: 800 });
+  await expect(canvas).toHaveJSProperty('width', 720);
+  await expect(page.getByRole('slider')).toHaveValue('149');
+  await page.setViewportSize({ width: 360, height: 800 });
+  await expect(canvas).toHaveJSProperty('width', 360);
   await page.getByRole('slider').press('Home');
   await expect(page.getByRole('slider')).toHaveValue('0');
   await page.screenshot({ path: testInfo.outputPath('mobile-preview.png'), fullPage: true });
 });
 
-test('unavailable WebCodecs disables both MP4 presets and export', async ({ page }) => {
+test('unavailable WebCodecs disables every MP4 preset and export', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(window, 'VideoEncoder', { value: undefined, configurable: true }));
   await openDemo(page);
-  for (const label of ['WebCodecs', 'H.264 720p30', 'H.264 540p30']) {
+  for (const label of ['WebCodecs', 'H.264 720p30', 'H.264 540p30', 'H.264 1080p30']) {
     await expect(diagnostic(page, label)).toHaveText('Tidak tersedia');
   }
+  await page.getByRole('button', { name: 'Buka dialog ekspor' }).click();
   await expect(page.getByRole('button', { name: 'Ekspor MP4' })).toBeDisabled();
   await expect(page.getByText(/Buka di Chrome terbaru melalui HTTPS/)).toBeVisible();
 });
@@ -50,6 +59,7 @@ test('540p is selected when the browser rejects 720p', async ({ page }) => {
   await openDemo(page);
   await expect(diagnostic(page, 'H.264 720p30')).toHaveText('Tidak tersedia');
   test.skip(await diagnostic(page, 'H.264 540p30').textContent() !== 'Tersedia', 'Browser has no native H.264 540p30 encoder.');
+  await page.getByRole('button', { name: 'Buka dialog ekspor' }).click();
   await expect(page.getByRole('radio', { name: /540p/ })).toBeChecked();
   await expect(page.getByRole('button', { name: 'Ekspor MP4' })).toBeEnabled();
 });
@@ -135,20 +145,25 @@ for (const preset of PRESETS) {
     page.on('pageerror', (error) => { pageErrors.push(error.message); });
     await openDemo(page);
     test.skip(await diagnostic(page, `H.264 ${preset.id}30`).textContent() !== 'Tersedia', `Browser has no native H.264 ${preset.id}30 encoder.`);
-    await page.getByRole('radio', { name: new RegExp(preset.id) }).check();
     if (preset.id === '720p') {
       await expect(page.getByRole('button', { name: 'Putar preview' })).toBeInViewport({ ratio: 1 });
+      await page.getByRole('slider', { name: 'Posisi frame preview' }).press('End');
       await page.screenshot({ path: testInfo.outputPath('desktop-preview.png') });
     }
 
+    await page.getByRole('button', { name: 'Buka dialog ekspor' }).click();
+    await page.getByRole('radio', { name: new RegExp(preset.id) }).check();
     await context.setOffline(true);
     await page.getByRole('button', { name: 'Ekspor MP4' }).click();
     if (preset.id === '720p') {
       await expect.poll(async () => Number(await page.getByRole('progressbar').getAttribute('value')), { timeout: 30_000 }).toBeGreaterThan(0);
+      await page.keyboard.press('Escape');
+      await expect(page.getByRole('dialog', { name: 'Ekspor video' })).toBeVisible();
       await page.getByRole('button', { name: 'Batalkan' }).click();
       await expect(page.getByText(/Ekspor dibatalkan/)).toBeVisible();
       await expect(page.getByRole('link', { name: 'Unduh MP4' })).toHaveCount(0);
-      await expect(page.getByRole('button', { name: 'Putar preview' })).toBeVisible();
+      await expect(page.locator('.preview-frame canvas')).toBeVisible();
+      await expect(page.locator('.transport input')).toHaveValue('149');
       await page.getByRole('button', { name: 'Coba lagi' }).click();
     }
 
@@ -161,7 +176,31 @@ for (const preset of PRESETS) {
     const path = testInfo.outputPath(download.suggestedFilename());
     await download.saveAs(path);
     const bytes = await verifyMp4(path, preset);
-    const samples = await verifyPlayback(page, await downloadLink.getAttribute('href'));
+    const url = await downloadLink.getAttribute('href');
+    const samples = await verifyPlayback(page, url);
+    if (preset.id === '720p') {
+      await page.getByRole('button', { name: 'Ekspor ulang' }).click();
+      await expect(downloadLink).toBeHidden();
+      const expired = await page.evaluate(async (old) => {
+        if (!old) return false;
+        try {
+          await fetch(old);
+          return false;
+        } catch {
+          return true;
+        }
+      }, url);
+      expect(expired).toBe(true);
+      await expect(downloadLink).toBeVisible({ timeout: 120_000 });
+      await expect(downloadLink).not.toHaveAttribute('href', url!);
+      const [repeat] = await Promise.all([page.waitForEvent('download'), downloadLink.click()]);
+      const repeatPath = testInfo.outputPath(`repeat-${repeat.suggestedFilename()}`);
+      await repeat.saveAs(repeatPath);
+      console.log(`Repeated 720p: ${await verifyMp4(repeatPath, preset)} bytes. ${(await page.getByText('MP4 siap diunduh').locator('..').innerText()).replaceAll('\n', ' | ')}`);
+      await page.getByRole('button', { name: 'Tutup dialog' }).click();
+      await expect(page.getByRole('button', { name: 'Buka dialog ekspor' })).toBeFocused();
+      await expect(page.getByRole('slider', { name: 'Posisi frame preview' })).toHaveValue('149');
+    }
     expect(pageErrors).toEqual([]);
     console.log(`Chrome ${browser.version()}, ${bytes} bytes. ${summary.replaceAll('\n', ' | ')}. Pixel check: ${JSON.stringify(samples)}`);
   });

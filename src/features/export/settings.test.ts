@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { canRetryWithBrowserEncoder, describeRenderError, getPresets, isMp4 } from './settings';
+import { canRetryWithBrowserEncoder, describeRenderError, estimateRemaining, getPresets, isMp4 } from './settings';
 
 describe('browser export settings', () => {
   it.each([
-    ['9:16', [[720, 1280], [540, 960]]],
-    ['16:9', [[1280, 720], [960, 540]]],
-    ['1:1', [[720, 720], [540, 540]]],
-  ] as const)('maps %s to even 720p and 540p dimensions', (ratio, dimensions) => {
+    ['9:16', [[720, 1280], [540, 960], [1080, 1920]]],
+    ['16:9', [[1280, 720], [960, 540], [1920, 1080]]],
+    ['1:1', [[720, 720], [540, 540], [1080, 1080]]],
+  ] as const)('maps %s to even dimensions for all presets', (ratio, dimensions) => {
     expect(getPresets(ratio).map(({ width, height }) => [width, height])).toEqual(dimensions);
   });
 
@@ -21,6 +21,17 @@ describe('browser export settings', () => {
     expect(describeRenderError(new Error('WebGL context lost'))).toContain('WebGL');
     expect(describeRenderError(new Error('Out of memory'))).toContain('Memori');
     expect(describeRenderError(new Error('delayRender timeout'))).toContain('batas waktu');
+    expect(describeRenderError(new DOMException('write', 'QuotaExceededError'))).toContain('Kuota');
+    expect(describeRenderError(new Error('audio codec failed'))).toContain('AAC');
+    expect(describeRenderError(new Error('cannot decode audio'))).toContain('ganti file MP3/WAV');
+    expect(describeRenderError(new DOMException('Video', 'NotSupportedError'))).toContain('H.264');
+  });
+
+  it('starts ETA only after measuring actual frame throughput', () => {
+    expect(estimateRemaining(1000, 0, 150)).toBeNull();
+    expect(estimateRemaining(800, 10, 150)).toBeNull();
+    expect(estimateRemaining(2000, 50, 150)).toBe(4000);
+    expect(estimateRemaining(2000, 150, 150)).toBeNull();
   });
 
   it('checks the MP4 file signature as well as the MIME type', async () => {

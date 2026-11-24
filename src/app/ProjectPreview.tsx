@@ -1,23 +1,46 @@
 import { Player, type PlayerRef } from '@remotion/player';
 import { Box, Clapperboard, Pause, Play } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore, type RefObject } from 'react';
 import type { Clip } from '../engine/composition/clip';
 import { StoryComposition, type StoryCompositionProps } from '../engine/composition/StoryComposition';
 import { getSceneAtFrame } from '../engine/timeline/scenes';
 import { getPresets } from '../features/export/settings';
+import { useStudioUi } from './studio-ui';
 
-function PlayerPane({ clip, inputProps }: { clip: Clip; inputProps: StoryCompositionProps }) {
-  const player = useRef<PlayerRef>(null);
-  const [frame, setFrame] = useState(0);
+type PreviewProps = { clip: Clip; inputProps: StoryCompositionProps; player: RefObject<PlayerRef | null> };
+
+const mobilePreviewQuery = '(width < 48rem)';
+
+function watchPreviewViewport(change: () => void) {
+  const query = window.matchMedia(mobilePreviewQuery);
+  query.addEventListener('change', change);
+  return () => query.removeEventListener('change', change);
+}
+
+function isMobilePreview() {
+  return window.matchMedia(mobilePreviewQuery).matches;
+}
+
+function PlayerPane({ clip, inputProps, player, frame, onFrameChange }: PreviewProps & {
+  frame: number;
+  onFrameChange: (frame: number) => void;
+}) {
+  const [initialFrame] = useState(frame);
   const [playing, setPlaying] = useState(false);
   const { aspectRatio, ranges, fps, durationInFrames } = clip;
   const { width, height } = getPresets(aspectRatio)[0];
-  const currentScene = getSceneAtFrame(ranges, frame)?.scene.id;
+  // Half the composition dimensions on narrow screens, with the same aspect ratio and DPR 1.
+  const scale = useSyncExternalStore(watchPreviewViewport, isMobilePreview) ? 0.5 : 1;
 
   useEffect(() => {
     const current = player.current;
     if (!current) return;
-    const update = ({ detail }: { detail: { frame: number } }) => setFrame(detail.frame);
+    const update = ({ detail }: { detail: { frame: number } }) => {
+      onFrameChange(detail.frame);
+      const scene = getSceneAtFrame(ranges, detail.frame)?.scene.id ?? null;
+      if (useStudioUi.getState().currentScene !== scene) useStudioUi.setState({ currentScene: scene });
+    };
+    update({ detail: { frame: current.getCurrentFrame() } });
     const play = () => setPlaying(true);
     const pause = () => setPlaying(false);
     current.addEventListener('frameupdate', update);
@@ -30,7 +53,7 @@ function PlayerPane({ clip, inputProps }: { clip: Clip; inputProps: StoryComposi
       current.removeEventListener('play', play);
       current.removeEventListener('pause', pause);
     };
-  }, []);
+  }, [onFrameChange, player, ranges]);
 
   return (
     <>
@@ -40,24 +63,24 @@ function PlayerPane({ clip, inputProps }: { clip: Clip; inputProps: StoryComposi
             ref={player}
             component={StoryComposition}
             inputProps={inputProps}
-            compositionWidth={width}
-            compositionHeight={height}
+            compositionWidth={width * scale}
+            compositionHeight={height * scale}
             durationInFrames={durationInFrames}
             fps={fps}
+            initialFrame={initialFrame}
             style={{ width: '100%', height: '100%' }}
-            initiallyMuted
-            numberOfSharedAudioTags={0}
+            numberOfSharedAudioTags={2}
             clickToPlay={false}
             spaceKeyToPlayOrPause={false}
             loop
             errorFallback={() => (
-              <p role="alert" className="preview-message">Preview 3D gagal. Muat ulang halaman atau tutup tab lain.</p>
+              <p role="alert" className="preview-message">Preview gagal. Muat ulang halaman. Jika masalah muncul setelah menambah audio, coba ganti file audio.</p>
             )}
           />
         </div>
       </div>
       <div className="transport">
-        <button type="button" className="play-control" aria-label={playing ? 'Jeda preview' : 'Putar preview'} onClick={() => player.current?.toggle()}>
+        <button type="button" className="play-control" aria-label={playing ? 'Jeda preview' : 'Putar preview'} onClick={(event) => player.current?.toggle(event)}>
           {playing ? <Pause size={19} fill="currentColor" /> : <Play size={19} fill="currentColor" />}
         </button>
         <input
@@ -70,26 +93,12 @@ function PlayerPane({ clip, inputProps }: { clip: Clip; inputProps: StoryComposi
         />
         <span className="timecode">{(frame / fps).toFixed(2)} / {(durationInFrames / fps).toFixed(2)} dtk</span>
       </div>
-      {ranges.length > 0 && (
-        <div className="scene-list" role="group" aria-label="Pilih scene">
-          {ranges.map(({ scene, start }) => (
-            <button
-              key={scene.id}
-              type="button"
-              className="button secondary-button"
-              aria-current={currentScene === scene.id ? 'step' : undefined}
-              onClick={() => { player.current?.pause(); player.current?.seekTo(start); }}
-            >
-              {scene.name}<span className="timecode">{(start / fps).toFixed(2)} dtk</span>
-            </button>
-          ))}
-        </div>
-      )}
     </>
   );
 }
 
-export function ProjectPreview({ unavailable, clip, inputProps }: { unavailable: string | null; clip: Clip; inputProps: StoryCompositionProps }) {
+export function ProjectPreview({ unavailable, clip, inputProps, player }: PreviewProps & { unavailable: string | null }) {
+  const [frame, setFrame] = useState(0);
   return (
     <section className="panel preview-panel" aria-labelledby="preview-title">
       <header className="panel-heading preview-heading">
@@ -103,7 +112,7 @@ export function ProjectPreview({ unavailable, clip, inputProps }: { unavailable:
             <p>{unavailable}</p>
           </div>
         </div>
-      ) : <PlayerPane clip={clip} inputProps={inputProps} />}
+      ) : <PlayerPane clip={clip} inputProps={inputProps} player={player} frame={frame} onFrameChange={setFrame} />}
     </section>
   );
 }

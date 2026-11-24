@@ -13,6 +13,9 @@ const vec3 = (value: z.ZodNumber) => z.tuple([value, value, value]);
 const position = vec3(z.number().min(-100).max(100));
 const rotation = vec3(z.number());
 const scale = vec3(z.number().min(0.01).max(50));
+export const characterPresets = ['human', 'robot', 'cat'] as const;
+export const presetNames = [...characterPresets, 'tree', 'house', 'rock'] as const;
+export const actionNames = ['idle', 'walk', 'wave', 'jump'] as const;
 
 function boundedArray<T extends z.ZodType>(item: T, min: number, max: number) {
   // Check the count before parsing each item, including on a large invalid paste.
@@ -102,10 +105,10 @@ const node = z.discriminatedUnion('kind', [
   z.strictObject({
     ...nodeFields,
     kind: z.literal('preset'),
-    preset: z.enum(['human', 'robot', 'cat', 'tree', 'house', 'rock']),
+    preset: z.enum(presetNames),
     colors: z.strictObject({ primary: hex.optional(), secondary: hex.optional(), accent: hex.optional() }).optional(),
     action: z.strictObject({
-      name: z.enum(['idle', 'walk', 'wave', 'jump']),
+      name: z.enum(actionNames),
       speed: z.number().min(0.25).max(3),
     }).optional(),
   }),
@@ -142,6 +145,7 @@ export const storyV1Schema = z.strictObject({
 export type ProjectDocument = z.output<typeof storyV1Schema>;
 export type StoryScene = z.output<typeof scene>;
 export type StoryNode = z.output<typeof node>;
+export type PresetNode = Extract<StoryNode, { kind: 'preset' }>;
 export type Caption = z.output<typeof caption>;
 export type Vec3 = z.output<typeof position>;
 export type Ease = z.output<typeof ease>;

@@ -4,12 +4,15 @@ import { StoryComposition, type StoryCompositionProps } from '../../engine/compo
 import { isMp4, type EncoderPreference, type Preset, type PresetSupport } from './settings';
 
 const loadRenderer = () => import('@remotion/web-renderer');
-const mediaOptions = {
+const mediaOptions = (withAudio: boolean) => ({
   container: 'mp4',
   videoCodec: 'h264',
-  muted: true,
+  audioCodec: withAudio ? 'aac' : null,
+  audioBitrate: 128_000,
+  muted: !withAudio,
   outputTarget: 'arraybuffer',
-} as const satisfies Omit<CanRenderMediaOnWebOptions, 'width' | 'height'>;
+  scale: 1,
+} as const satisfies Omit<CanRenderMediaOnWebOptions, 'width' | 'height'>);
 
 export function readDevice() {
   let webgl2 = false;
@@ -31,9 +34,9 @@ export function readDevice() {
 export type Device = ReturnType<typeof readDevice>;
 
 async function supportsAvc(preset: Preset, fps: number, hardwareAcceleration: EncoderPreference) {
-  // Both presets fit AVC level 3.1 up to 30 FPS. Check High and Constrained Baseline
-  // because the browser-specific codec string is selected inside the renderer.
-  for (const codec of ['avc1.64001f', 'avc1.42401f']) {
+  // Level 3.1 covers up to 720p30. Level 4.0 covers up to 1080p30.
+  const level = preset.id === '1080p' ? '28' : '1f';
+  for (const codec of [`avc1.6400${level}`, `avc1.4240${level}`]) {
     try {
       const { supported } = await VideoEncoder.isConfigSupported({
         codec,
@@ -52,7 +55,7 @@ async function supportsAvc(preset: Preset, fps: number, hardwareAcceleration: En
   return false;
 }
 
-export async function checkPreset(device: Device, preset: Preset, fps: number): Promise<PresetSupport> {
+export async function checkPreset(device: Device, preset: Preset, fps: number, withAudio = false, videoSupport?: PresetSupport): Promise<PresetSupport> {
   if (!device.secureContext || !device.webgl2 || !device.videoEncoder) {
     return { supported: false, detail: 'Perlu konteks aman, WebGL2, dan WebCodecs.' };
   }
@@ -60,11 +63,15 @@ export async function checkPreset(device: Device, preset: Preset, fps: number): 
   try {
     const { canRenderMediaOnWeb } = await loadRenderer();
     const { width, height, videoBitrate } = preset;
-    const check = await canRenderMediaOnWeb({ ...mediaOptions, width, height, videoBitrate });
-    if (!check.canRender || check.resolvedVideoCodec !== mediaOptions.videoCodec) {
-      const detail = check.issues.find((issue) => issue.severity === 'error')?.message;
-      return { supported: false, detail: detail ?? 'Encoder H.264 MP4 tidak tersedia.' };
+    const options = mediaOptions(withAudio);
+    const check = await canRenderMediaOnWeb({ ...options, width, height, videoBitrate });
+    if (withAudio && (check.resolvedAudioCodec !== 'aac' || check.issues.some((issue) => issue.type === 'audio-codec-unsupported'))) {
+      return { supported: false, detail: 'Encoder AAC tidak tersedia. Anda dapat memilih Ekspor tanpa audio.' };
     }
+    if (!check.canRender || check.resolvedVideoCodec !== 'h264' || check.resolvedOutputTarget !== options.outputTarget) {
+      return { supported: false, detail: 'Konfigurasi H.264 MP4 ini tidak tersedia. Coba resolusi lain.' };
+    }
+    if (videoSupport) return videoSupport;
 
     if (await supportsAvc(preset, fps, 'prefer-hardware')) {
       return { supported: true, encoder: 'prefer-hardware' };
@@ -74,7 +81,8 @@ export async function checkPreset(device: Device, preset: Preset, fps: number): 
     }
     return { supported: false, detail: `WebCodecs menolak konfigurasi H.264 pada ${fps} FPS.` };
   } catch (error) {
-    return { supported: false, detail: error instanceof Error ? error.message : String(error) };
+    const detail = error instanceof Error ? error.message : String(error);
+    return { supported: false, detail: withAudio ? `Pemeriksaan AAC gagal. ${detail}` : detail };
   }
 }
 
@@ -89,19 +97,34 @@ export async function renderVideo(
   signal.throwIfAborted();
   const { width, height, videoBitrate } = preset;
   const { id, fps, durationInFrames } = getClip(inputProps.project);
+  const withAudio = inputProps.audio.length > 0;
   const result = await renderMediaOnWeb({
-    ...mediaOptions,
+    ...mediaOptions(withAudio),
     composition: { id, fps, durationInFrames, component: StoryComposition, width, height, defaultProps: inputProps },
     inputProps,
     videoBitrate,
     hardwareAcceleration,
     signal,
     onProgress,
+    sampleRate: 48_000,
+    mediaCacheSizeInBytes: 32 * 1024 * 1024,
     pageResponsiveness: 'high',
     licenseKey: 'free-license',
   });
   signal.throwIfAborted();
   const blob = await result.getBlob();
   if (!(await isMp4(blob))) throw new Error('Output MP4 tidak valid.');
+  if (withAudio) {
+    const { BlobSource, Input, MP4 } = await import('mediabunny');
+    const output = new Input({ source: new BlobSource(blob), formats: [MP4] });
+    try {
+      const audio = await output.getPrimaryAudioTrack();
+      if (!audio || await audio.getCodec() !== 'aac' || await audio.computeDuration() <= 0) {
+        throw new Error('Track AAC tidak ditemukan atau kosong di hasil MP4.');
+      }
+    } finally {
+      output.dispose();
+    }
+  }
   return blob;
 }

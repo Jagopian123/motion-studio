@@ -1,4 +1,4 @@
-import type { ProjectDocument, StoryScene } from './story-v1';
+import { characterPresets, type ProjectDocument, type StoryScene } from './story-v1';
 
 export type StoryIssue = { path: readonly (string | number)[]; message: string };
 
@@ -49,7 +49,7 @@ function validateNodes(scene: StoryScene, report: Report) {
       && node.geometry.radiusTop === 0 && node.geometry.radiusBottom === 0) {
       report(['nodes', index, 'geometry', 'radiusTop'], 'Setidaknya satu radius silinder harus lebih besar dari nol.');
     }
-    if (node.kind === 'preset' && node.action && !['human', 'robot', 'cat'].includes(node.preset)) {
+    if (node.kind === 'preset' && node.action && !characterPresets.some((preset) => preset === node.preset)) {
       report(['nodes', index, 'action'], `Preset "${node.preset}" tidak mendukung action.`);
     }
     const properties = new Set<string>();
