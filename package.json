@@ -20,12 +20,14 @@
     "@remotion/player": "4.0.546",
     "@remotion/three": "4.0.546",
     "@remotion/web-renderer": "4.0.546",
+    "dexie": "4.4.7",
     "lucide-react": "1.78.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "remotion": "4.0.546",
     "three": "0.187.0",
-    "zod": "4.6.7"
+    "zod": "4.6.7",
+    "zustand": "5.1.0"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
