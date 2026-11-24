@@ -44,11 +44,11 @@ Keduanya memakai preferensi `prefer-hardware` dan proses render selesai dengan j
 
 | Pengujian | Status |
 | --- | --- |
-| Deploy Direct Upload dan buka HTTPS `pages.dev` | NOT TESTED |
+| Deploy Cloudflare Pages dari GitHub dan buka HTTPS `pages.dev` | NOT TESTED |
 | POCO F6 Chrome · diagnostik dan preview | NOT TESTED |
 | POCO F6 Chrome · 720p30, unduh dan putar MP4 5 detik | NOT TESTED |
 | POCO F6 Chrome · 540p30, batal/coba lagi, render berulang | NOT TESTED |
 
-`adb devices -l` tidak menemukan perangkat tersambung. Build `dist/` disiapkan untuk Cloudflare Pages Direct Upload. Ikuti checklist fisik di `README.md`, lalu catat versi Chrome/Android, hasil diagnostik, durasi, waktu render dan ukuran file. Gate untuk Sesi 2 baru terpenuhi setelah POCO F6 menghasilkan MP4 baseline 720p30 yang bisa diputar melalui situs HTTPS. Jika gagal, gunakan prompt troubleshooting S1 di `PROMPTS.md` untuk memperbaiki jalur baseline.
+`adb devices -l` tidak menemukan perangkat tersambung. `README.md` mencatat pengaturan Cloudflare Pages yang membangun `dist/` dari branch `main` di GitHub. Setelah deploy, ikuti checklist fisik di `README.md`, lalu catat versi Chrome/Android, hasil diagnostik, durasi, waktu render dan ukuran file. Gate untuk Sesi 2 baru terpenuhi setelah POCO F6 menghasilkan MP4 baseline 720p30 yang bisa diputar melalui situs HTTPS. Jika gagal, gunakan prompt troubleshooting S1 di `PROMPTS.md` untuk memperbaiki jalur baseline.
 
-Referensi API dan hosting. [ThreeCanvas](https://www.remotion.dev/docs/three-canvas) · [Preflight](https://www.remotion.dev/docs/web-renderer/can-render-media-on-web) · [Web Renderer](https://www.remotion.dev/docs/web-renderer/render-media-on-web) · [Telemetri Remotion](https://www.remotion.dev/docs/telemetry) · [Vite static deployment](https://vite.dev/guide/static-deploy.html) · [Cloudflare Pages Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/)
+Referensi API dan hosting. [ThreeCanvas](https://www.remotion.dev/docs/three-canvas) · [Preflight](https://www.remotion.dev/docs/web-renderer/can-render-media-on-web) · [Web Renderer](https://www.remotion.dev/docs/web-renderer/render-media-on-web) · [Telemetri Remotion](https://www.remotion.dev/docs/telemetry) · [Vite static deployment](https://vite.dev/guide/static-deploy.html) · [Integrasi Git Cloudflare Pages](https://developers.cloudflare.com/pages/get-started/git-integration/)

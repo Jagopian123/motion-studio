@@ -23,12 +23,25 @@ npm run preview
 
 Build produksi ada di `dist/`. Playwright memakai Chrome desktop yang terpasang dan melayani build produksi secara otomatis. Jalankan `npm run test:e2e` setelah build. Alternatifnya, instal Chromium dengan `npx playwright install chromium`, set variabel lingkungan `MOTION_BROWSER=chromium`, lalu jalankan `npm run test:e2e`. Uji ekspor akan mencatat skip bila codec atau konteks grafis yang diperlukan tidak tersedia.
 
-## Deploy `dist/` ke Cloudflare Pages
+## Deploy ke Cloudflare Pages dari GitHub
 
-1. Jalankan `npm ci` dan `npm run build`.
-2. Di dashboard Cloudflare buka **Workers & Pages**, pilih **Create application**, lalu **Get started** dan **Drag and drop your files**.
-3. Beri nama proyek Pages, unggah folder `dist/` sebagai build output, lalu pilih **Deploy site**. Akar aset yang diunggah berisi `index.html`.
-4. Buka `https://<nama-proyek>.pages.dev` di Chrome. Untuk pembaruan gunakan **Create a new deployment** dan unggah `dist/` dari build baru. [Panduan Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/)
+1. Pastikan branch `main` sudah ada di repo `Jagopian123/motion-studio` di GitHub.
+2. Di dashboard Cloudflare buka **Workers & Pages**, lalu pilih **Create application → Pages → Connect to Git**. Pilih **GitHub**, beri Cloudflare Pages akses ke repo `motion-studio`, pilih repo itu, lalu klik **Begin setup**. [Panduan integrasi Git Cloudflare Pages](https://developers.cloudflare.com/pages/get-started/git-integration/)
+3. Isi pengaturan berikut pada halaman setup.
+
+   | Pengaturan | Nilai |
+   | --- | --- |
+   | Project name | `motion-studio` atau nama lain yang tersedia |
+   | Production branch | `main` |
+   | Framework preset | `None` |
+   | Build command | `npm run build` |
+   | Build output directory | `dist` |
+   | Root directory | Kosong (root repo) |
+   | Environment variable | `NODE_VERSION` = `24.13.0` |
+
+   [Pengaturan build](https://developers.cloudflare.com/pages/configuration/build-configuration/) · [Versi Node.js](https://developers.cloudflare.com/pages/configuration/build-image/)
+
+4. Klik **Save and Deploy**. Cloudflare memasang dependensi, menjalankan build, lalu menyajikan isi `dist/`. Setelah deploy berhasil, buka URL HTTPS `pages.dev` yang tertera di dashboard. Push berikutnya ke `main` memicu deploy produksi secara otomatis. Ekspor MP4 tetap berlangsung di browser perangkat. [Panduan integrasi Git Cloudflare Pages](https://developers.cloudflare.com/pages/get-started/git-integration/)
 
 ## Tes fisik Chrome pada POCO F6
 
