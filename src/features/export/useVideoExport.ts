@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { renderDemo } from './browser-renderer';
+import type { StoryCompositionProps } from '../../engine/composition/StoryComposition';
+import { renderVideo } from './browser-renderer';
 import { canRetryWithBrowserEncoder, describeRenderError, type EncoderPreference, type Preset } from './settings';
 
 type ExportState =
@@ -9,7 +10,7 @@ type ExportState =
   | { phase: 'error'; help: string; detail: string }
   | { phase: 'done'; url: string; fileSize: number; elapsed: number; preset: Preset; encoder: EncoderPreference; fallback: boolean };
 
-export function useDemoExport() {
+export function useVideoExport(inputProps: StoryCompositionProps) {
   const [state, setState] = useState<ExportState>({ phase: 'idle' });
   const activeJob = useRef<AbortController | null>(null);
   const download = useRef<string | null>(null);
@@ -29,7 +30,7 @@ export function useDemoExport() {
 
     const attempt = (encoder: EncoderPreference, fallback: boolean) => {
       setState({ phase: 'rendering', progress: 0, frames: 0, encoder, fallback, cancelling: false });
-      return renderDemo(preset, encoder, job.signal, ({ encodedFrames, progress }) => {
+      return renderVideo(inputProps, preset, encoder, job.signal, ({ encodedFrames, progress }) => {
         if (job.signal.aborted) return;
         setState({ phase: 'rendering', progress, frames: encodedFrames, encoder, fallback, cancelling: false });
       });
@@ -62,5 +63,13 @@ export function useDemoExport() {
     setState((previous) => previous.phase === 'rendering' ? { ...previous, cancelling: true } : previous);
   };
 
-  return { state, start, cancel };
+  const reset = () => {
+    if (activeJob.current) return false;
+    if (download.current) URL.revokeObjectURL(download.current);
+    download.current = null;
+    setState({ phase: 'idle' });
+    return true;
+  };
+
+  return { state, start, cancel, reset };
 }

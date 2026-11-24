@@ -1,11 +1,10 @@
 import { Download, Film, Info, MonitorCheck } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { DEMO } from '../../engine/composition/demo';
+import { useEffect, useMemo, useState } from 'react';
+import type { Clip } from '../../engine/composition/clip';
 import { checkPreset, type Device } from './browser-renderer';
-import { PRESETS, type EncoderPreference, type Preset, type PresetSupport } from './settings';
-import type { useDemoExport } from './useDemoExport';
+import { getPresets, type EncoderPreference, type Preset, type PresetSupport } from './settings';
+import type { useVideoExport } from './useVideoExport';
 
-const [mainPreset, fallbackPreset] = PRESETS;
 type Support = Record<Preset['id'], PresetSupport>;
 
 function SupportBadge({ value }: { value: boolean | undefined }) {
@@ -17,9 +16,12 @@ function encoderLabel(encoder: EncoderPreference) {
   return encoder === 'prefer-hardware' ? 'Prioritas perangkat keras' : 'Pilihan browser';
 }
 
-export function ExportPanel({ device, job }: { device: Device; job: ReturnType<typeof useDemoExport> }) {
+export function ExportPanel({ device, job, clip }: { device: Device; job: ReturnType<typeof useVideoExport>; clip: Clip }) {
+  const { aspectRatio, durationInFrames, fps } = clip;
+  const presets = useMemo(() => getPresets(aspectRatio), [aspectRatio]);
+  const [mainPreset, fallbackPreset] = presets;
   const [support, setSupport] = useState<Support | null>(null);
-  const [selection, setSelection] = useState<Preset['id']>(mainPreset.id);
+  const [selection, setSelection] = useState<Preset['id']>('720p');
   const { state, start, cancel } = job;
   const rendering = state.phase === 'rendering';
 
@@ -27,13 +29,14 @@ export function ExportPanel({ device, job }: { device: Device; job: ReturnType<t
     let mounted = true;
     async function check() {
       // Probe sequentially to avoid competing for a limited mobile encoder.
-      const main = await checkPreset(device, mainPreset);
-      const fallback = await checkPreset(device, fallbackPreset);
-      if (mounted) setSupport({ [mainPreset.id]: main, [fallbackPreset.id]: fallback });
+      const main = await checkPreset(device, mainPreset, fps);
+      if (!mounted) return;
+      const fallback = await checkPreset(device, fallbackPreset, fps);
+      if (mounted) setSupport({ '720p': main, '540p': fallback });
     }
     void check();
     return () => { mounted = false; };
-  }, [device]);
+  }, [device, mainPreset, fallbackPreset, fps]);
 
   const autoFallback = support && !support[mainPreset.id].supported && support[fallbackPreset.id].supported;
   const selected = selection === fallbackPreset.id || autoFallback ? fallbackPreset : mainPreset;
@@ -51,7 +54,7 @@ export function ExportPanel({ device, job }: { device: Device; job: ReturnType<t
           <fieldset disabled={rendering} className="presets">
             <legend>Resolusi</legend>
             <div className="preset-grid">
-              {PRESETS.map((preset) => (
+              {presets.map((preset) => (
                 <label className="preset" key={preset.id}>
                   <input
                     type="radio"
@@ -66,7 +69,7 @@ export function ExportPanel({ device, job }: { device: Device; job: ReturnType<t
               ))}
             </div>
           </fieldset>
-          <div className="export-spec"><span>{DEMO.fps} FPS</span><span>{DEMO.durationInFrames} frame</span><span>Tanpa audio</span></div>
+          <div className="export-spec"><span>{fps} FPS</span><span>{durationInFrames} frame</span><span>Tanpa audio</span></div>
           {autoFallback && <p className="helper">720p tidak tersedia. 540p dipilih otomatis.</p>}
           {capability?.supported && !rendering && state.phase !== 'done' && <p className="helper">Encoder · {encoderLabel(capability.encoder)}</p>}
           {rendering ? (
@@ -76,7 +79,7 @@ export function ExportPanel({ device, job }: { device: Device; job: ReturnType<t
                 <span>{Math.floor(state.progress * 100)}%</span>
               </div>
               <progress aria-label="Progres ekspor" value={state.progress} max={1} />
-              <p className="helper">{Math.min(state.frames, DEMO.durationInFrames)} / {DEMO.durationInFrames} frame · {state.fallback ? 'Fallback encoder browser' : encoderLabel(state.encoder)}</p>
+              <p className="helper">{Math.min(state.frames, durationInFrames)} / {durationInFrames} frame · {state.fallback ? 'Fallback encoder browser' : encoderLabel(state.encoder)}</p>
               <button type="button" className="button secondary-button" disabled={state.cancelling} onClick={cancel}>Batalkan</button>
             </div>
           ) : (
@@ -86,12 +89,12 @@ export function ExportPanel({ device, job }: { device: Device; job: ReturnType<t
               {state.phase === 'done' && (
                 <div className="notice result-notice" role="status">
                   <strong>MP4 siap diunduh</strong>
-                  <p>{state.preset.width} × {state.preset.height} · {DEMO.durationInFrames} frame · {(state.fileSize / 1024).toFixed(0)} KiB · {(state.elapsed / 1000).toFixed(1)} dtk render</p>
+                  <p>{state.preset.width} × {state.preset.height} · {durationInFrames} frame · {(state.fileSize / 1024).toFixed(0)} KiB · {(state.elapsed / 1000).toFixed(1)} dtk render</p>
                   <p>{state.fallback ? 'Fallback encoder browser' : encoderLabel(state.encoder)}</p>
                 </div>
               )}
               {state.phase === 'done' && (
-                <a className="button primary-button" href={state.url} download={`motion-studio-orbit-01-${state.preset.id}.mp4`}><Download size={17} aria-hidden /> Unduh MP4</a>
+                <a className="button primary-button" href={state.url} download={`motion-studio-${clip.id}-${state.preset.id}.mp4`}><Download size={17} aria-hidden /> Unduh MP4</a>
               )}
               <button
                 type="button"
@@ -115,8 +118,8 @@ export function ExportPanel({ device, job }: { device: Device; job: ReturnType<t
           <div><dt>Konteks aman</dt><dd><SupportBadge value={device.secureContext} /></dd></div>
           <div><dt>WebGL2</dt><dd><SupportBadge value={device.webgl2} /></dd></div>
           <div><dt>WebCodecs</dt><dd><SupportBadge value={device.videoEncoder} /></dd></div>
-          <div><dt>H.264 720p30</dt><dd><SupportBadge value={support?.[mainPreset.id].supported} /></dd></div>
-          <div><dt>H.264 540p30</dt><dd><SupportBadge value={support?.[fallbackPreset.id].supported} /></dd></div>
+          <div><dt>H.264 720p{fps}</dt><dd><SupportBadge value={support?.[mainPreset.id].supported} /></dd></div>
+          <div><dt>H.264 540p{fps}</dt><dd><SupportBadge value={support?.[fallbackPreset.id].supported} /></dd></div>
         </dl>
       </section>
     </aside>

@@ -1,6 +1,6 @@
 import type { CanRenderMediaOnWebOptions, RenderMediaOnWebProgress } from '@remotion/web-renderer';
-import { DEMO } from '../../engine/composition/demo';
-import { StoryComposition } from '../../engine/composition/StoryComposition';
+import { getClip } from '../../engine/composition/clip';
+import { StoryComposition, type StoryCompositionProps } from '../../engine/composition/StoryComposition';
 import { isMp4, type EncoderPreference, type Preset, type PresetSupport } from './settings';
 
 const loadRenderer = () => import('@remotion/web-renderer');
@@ -30,8 +30,8 @@ export function readDevice() {
 
 export type Device = ReturnType<typeof readDevice>;
 
-async function supportsAvc(preset: Preset, hardwareAcceleration: EncoderPreference) {
-  // Both presets fit AVC level 3.1 at 30 FPS. Check High and Constrained Baseline
+async function supportsAvc(preset: Preset, fps: number, hardwareAcceleration: EncoderPreference) {
+  // Both presets fit AVC level 3.1 up to 30 FPS. Check High and Constrained Baseline
   // because the browser-specific codec string is selected inside the renderer.
   for (const codec of ['avc1.64001f', 'avc1.42401f']) {
     try {
@@ -39,7 +39,7 @@ async function supportsAvc(preset: Preset, hardwareAcceleration: EncoderPreferen
         codec,
         width: preset.width,
         height: preset.height,
-        framerate: DEMO.fps,
+        framerate: fps,
         bitrate: preset.videoBitrate,
         hardwareAcceleration,
         avc: { format: 'avc' },
@@ -52,7 +52,7 @@ async function supportsAvc(preset: Preset, hardwareAcceleration: EncoderPreferen
   return false;
 }
 
-export async function checkPreset(device: Device, preset: Preset): Promise<PresetSupport> {
+export async function checkPreset(device: Device, preset: Preset, fps: number): Promise<PresetSupport> {
   if (!device.secureContext || !device.webgl2 || !device.videoEncoder) {
     return { supported: false, detail: 'Perlu konteks aman, WebGL2, dan WebCodecs.' };
   }
@@ -66,19 +66,20 @@ export async function checkPreset(device: Device, preset: Preset): Promise<Prese
       return { supported: false, detail: detail ?? 'Encoder H.264 MP4 tidak tersedia.' };
     }
 
-    if (await supportsAvc(preset, 'prefer-hardware')) {
+    if (await supportsAvc(preset, fps, 'prefer-hardware')) {
       return { supported: true, encoder: 'prefer-hardware' };
     }
-    if (await supportsAvc(preset, 'no-preference')) {
+    if (await supportsAvc(preset, fps, 'no-preference')) {
       return { supported: true, encoder: 'no-preference' };
     }
-    return { supported: false, detail: 'WebCodecs menolak konfigurasi H.264 pada 30 FPS.' };
+    return { supported: false, detail: `WebCodecs menolak konfigurasi H.264 pada ${fps} FPS.` };
   } catch (error) {
     return { supported: false, detail: error instanceof Error ? error.message : String(error) };
   }
 }
 
-export async function renderDemo(
+export async function renderVideo(
+  inputProps: StoryCompositionProps,
   preset: Preset,
   hardwareAcceleration: EncoderPreference,
   signal: AbortSignal,
@@ -87,9 +88,11 @@ export async function renderDemo(
   const { renderMediaOnWeb } = await loadRenderer();
   signal.throwIfAborted();
   const { width, height, videoBitrate } = preset;
+  const { id, fps, durationInFrames } = getClip(inputProps.project);
   const result = await renderMediaOnWeb({
     ...mediaOptions,
-    composition: { ...DEMO, id: 'orbit-01', component: StoryComposition, width, height },
+    composition: { id, fps, durationInFrames, component: StoryComposition, width, height, defaultProps: inputProps },
+    inputProps,
     videoBitrate,
     hardwareAcceleration,
     signal,

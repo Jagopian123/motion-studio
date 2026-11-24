@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { canRetryWithBrowserEncoder, describeRenderError, isMp4, PRESETS } from './settings';
+import { canRetryWithBrowserEncoder, describeRenderError, getPresets, isMp4 } from './settings';
 
 describe('browser export settings', () => {
-  it.each(PRESETS)('$id keeps even portrait dimensions', ({ width, height }) => {
-    expect(width / height).toBe(9 / 16);
-    expect(width % 2).toBe(0);
-    expect(height % 2).toBe(0);
+  it.each([
+    ['9:16', [[720, 1280], [540, 960]]],
+    ['16:9', [[1280, 720], [960, 540]]],
+    ['1:1', [[720, 720], [540, 540]]],
+  ] as const)('maps %s to even 720p and 540p dimensions', (ratio, dimensions) => {
+    expect(getPresets(ratio).map(({ width, height }) => [width, height])).toEqual(dimensions);
   });
 
   it('allows a browser-selected encoder retry only for relevant failures', () => {

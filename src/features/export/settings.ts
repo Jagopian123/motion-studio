@@ -1,8 +1,21 @@
-export const PRESETS = [
-  { id: '720p', width: 720, height: 1280, videoBitrate: 4_000_000 },
-  { id: '540p', width: 540, height: 960, videoBitrate: 2_500_000 },
+import type { ProjectDocument } from '../../engine/schema/story-v1';
+
+const resolutions = [
+  { id: '720p', short: 720, long: 1280, videoBitrate: 4_000_000 },
+  { id: '540p', short: 540, long: 960, videoBitrate: 2_500_000 },
 ] as const;
 
+export function getPresets(aspectRatio: ProjectDocument['aspectRatio']) {
+  const toPreset = ({ id, short, long, videoBitrate }: (typeof resolutions)[number]) => ({
+    id,
+    width: aspectRatio === '16:9' ? long : short,
+    height: aspectRatio === '9:16' ? long : short,
+    videoBitrate,
+  });
+  return [toPreset(resolutions[0]), toPreset(resolutions[1])] as const;
+}
+
+export const PRESETS = getPresets('9:16');
 export type Preset = (typeof PRESETS)[number];
 export type EncoderPreference = 'prefer-hardware' | 'no-preference';
 

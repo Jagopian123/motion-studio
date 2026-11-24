@@ -1,15 +1,18 @@
 import { Player, type PlayerRef } from '@remotion/player';
 import { Box, Clapperboard, Pause, Play } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { DEMO } from '../engine/composition/demo';
-import { StoryComposition } from '../engine/composition/StoryComposition';
+import type { Clip } from '../engine/composition/clip';
+import { StoryComposition, type StoryCompositionProps } from '../engine/composition/StoryComposition';
+import { getSceneAtFrame } from '../engine/timeline/scenes';
+import { getPresets } from '../features/export/settings';
 
-const duration = DEMO.durationInFrames / DEMO.fps;
-
-function PlayerPane() {
+function PlayerPane({ clip, inputProps }: { clip: Clip; inputProps: StoryCompositionProps }) {
   const player = useRef<PlayerRef>(null);
   const [frame, setFrame] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const { aspectRatio, ranges, fps, durationInFrames } = clip;
+  const { width, height } = getPresets(aspectRatio)[0];
+  const currentScene = getSceneAtFrame(ranges, frame)?.scene.id;
 
   useEffect(() => {
     const current = player.current;
@@ -32,14 +35,15 @@ function PlayerPane() {
   return (
     <>
       <div className="stage">
-        <div className="portrait">
+        <div className="preview-frame" data-ratio={aspectRatio}>
           <Player
             ref={player}
             component={StoryComposition}
-            compositionWidth={DEMO.width}
-            compositionHeight={DEMO.height}
-            durationInFrames={DEMO.durationInFrames}
-            fps={DEMO.fps}
+            inputProps={inputProps}
+            compositionWidth={width}
+            compositionHeight={height}
+            durationInFrames={durationInFrames}
+            fps={fps}
             style={{ width: '100%', height: '100%' }}
             initiallyMuted
             numberOfSharedAudioTags={0}
@@ -61,30 +65,45 @@ function PlayerPane() {
           aria-label="Posisi frame preview"
           value={frame}
           min={0}
-          max={DEMO.durationInFrames - 1}
+          max={durationInFrames - 1}
           onChange={(event) => player.current?.seekTo(event.currentTarget.valueAsNumber)}
         />
-        <span className="timecode">{(frame / DEMO.fps).toFixed(2)} / {duration.toFixed(2)} dtk</span>
+        <span className="timecode">{(frame / fps).toFixed(2)} / {(durationInFrames / fps).toFixed(2)} dtk</span>
       </div>
+      {ranges.length > 0 && (
+        <div className="scene-list" role="group" aria-label="Pilih scene">
+          {ranges.map(({ scene, start }) => (
+            <button
+              key={scene.id}
+              type="button"
+              className="button secondary-button"
+              aria-current={currentScene === scene.id ? 'step' : undefined}
+              onClick={() => { player.current?.pause(); player.current?.seekTo(start); }}
+            >
+              {scene.name}<span className="timecode">{(start / fps).toFixed(2)} dtk</span>
+            </button>
+          ))}
+        </div>
+      )}
     </>
   );
 }
 
-export function DemoPreview({ unavailable }: { unavailable: string | null }) {
+export function ProjectPreview({ unavailable, clip, inputProps }: { unavailable: string | null; clip: Clip; inputProps: StoryCompositionProps }) {
   return (
     <section className="panel preview-panel" aria-labelledby="preview-title">
       <header className="panel-heading preview-heading">
         <div className="heading-with-icon"><Clapperboard size={18} aria-hidden /><h2 id="preview-title">Preview 3D</h2></div>
-        <span className="technical-tag">9:16</span>
+        <span className="technical-tag">{clip.aspectRatio}</span>
       </header>
       {unavailable ? (
         <div className="stage">
-          <div className="portrait preview-message" role="status">
+          <div className="preview-frame preview-message" data-ratio={clip.aspectRatio} role="status">
             <Box size={28} aria-hidden />
             <p>{unavailable}</p>
           </div>
         </div>
-      ) : <PlayerPane />}
+      ) : <PlayerPane clip={clip} inputProps={inputProps} />}
     </section>
   );
 }

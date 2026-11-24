@@ -1,6 +1,6 @@
 # Motion Studio
 
-**Sesi 1 · Orbit 01** adalah demo robot 3D vertikal berdurasi 5 detik. Preview dan ekspor memakai komposisi yang sama. Three.js menggambar setiap frame, lalu WebCodecs mengenkode video H.264 ke MP4 di browser. Demo memakai 30 FPS dan 150 frame dengan pilihan 720 × 1280 atau 540 × 960, tanpa audio.
+Motion Studio memutar dan mengekspor cerita 3D dari JSON v1. Preview dan ekspor memakai komposisi Remotion yang sama. Three.js menggambar setiap frame, lalu WebCodecs mengenkode video H.264 ke MP4 di browser. Saat halaman dibuka, demo robot **Orbit 01** dari Sesi 1 tersedia selama 5 detik pada 30 FPS.
 
 ## Jalankan di Windows
 
@@ -22,6 +22,15 @@ npm run preview
 ```
 
 Build produksi ada di `dist/`. Playwright memakai Chrome desktop yang terpasang dan melayani build produksi secara otomatis. Jalankan `npm run test:e2e` setelah build. Alternatifnya, instal Chromium dengan `npx playwright install chromium`, set variabel lingkungan `MOTION_BROWSER=chromium`, lalu jalankan `npm run test:e2e`. Uji ekspor akan mencatat skip bila codec atau konteks grafis yang diperlukan tidak tersedia.
+
+## Coba engine JSON Sesi 2
+
+1. Buka panel **Impor cerita JSON v1**. Tekan **Isi dengan demo JSON** atau tempel JSON sendiri, lalu pilih **Terapkan JSON**.
+2. Demo **Observatorium Prisma** berdurasi 6 detik pada 30 FPS. Klik **Prisma bangkit** dan **Orbit satelit** untuk pindah ke frame 0 dan 90. Geser kembali satu frame dari batas scene untuk mengecek hard cut dan pergantian caption.
+3. Pilih **720p** atau **540p**, tekan **Ekspor MP4**, lalu unduh ketika selesai. Resolusi mengikuti rasio cerita (9:16, 16:9, atau 1:1). FPS mengikuti cerita (24 atau 30).
+4. Ubah salah satu field menjadi tidak valid, lalu terapkan lagi. Panel menampilkan path tiap kesalahan yang terlihat dan proyek aktif tetap dapat diputar. **Gunakan Orbit 01** mengembalikan demo awal.
+
+Kontrak v1 ada di bagian 7 PRD. Demo Sesi 2 memakai group dan semua enam geometri primitive. Impor menerima hingga 1 MiB UTF-8, maksimal 12 scene dan 60 detik. `example-story.json` memakai preset yang dikenali validator v1. Editor akan menampilkan pesan pada path preset sampai library Sesi 3 tersedia. Cerita yang diterapkan hidup di tab hingga halaman dimuat ulang. [Kontrak JSON](PRD.md#7-kontrak-json-v1-sumber-kebenaran) · [Fixture demo Sesi 2](src/examples/primitive-story.json)
 
 ## Deploy ke Cloudflare Pages dari GitHub
 
@@ -51,9 +60,10 @@ Jika dashboard menampilkan **Deploy command** seperti `npx wrangler deploy`, And
 2. Pastikan diagnostik menunjukkan konteks aman, WebGL2, WebCodecs, dan dukungan H.264. Putar dan geser preview. Periksa robot, orbit kamera, platform, dan judul.
 3. Pilih **720p**, ekspor sambil mempertahankan tab aktif dan layar menyala, lalu unduh MP4. Putar file dari Unduhan Chrome. Periksa klip 5 detik, resolusi 720 × 1280, gerakan robot dan kamera, serta judul yang terlihat. Catat waktu render, jumlah frame, ukuran file dan mode encoder dari panel.
 4. Mulai ekspor lagi, batalkan ketika progres bergerak, dan ulangi. Uji **540p** (540 × 960, 30 FPS) sebagai pembanding atau jika 720p gagal. Catat hasil masing-masing, pesan error utuh, dan apakah terjadi crash atau layar hitam.
+5. Untuk Sesi 2, terapkan demo **Observatorium Prisma**, periksa preview di detik 0 dan 3, serta coba kembali satu frame dari detik 3. Ekspor 720p30 dan putar unduhannya. Klip harus berdurasi 6 detik, dengan prisma biru dan caption bawah pada scene pertama, lalu satelit dan caption atas pada scene kedua. Coba JSON rusak seperti `{` dan pastikan cerita tetap tersedia setelah ditolak. Catat waktu render, ukuran, mode encoder, dan hasil playback.
 
 ## Dukungan browser dan data
 
-- Prioritas encoder perangkat keras adalah permintaan ke browser. Bila preflight menolaknya, atau encoder gagal saat render, aplikasi dapat mencoba konfigurasi dengan encoder pilihan browser. Dukungan 540p diuji terpisah. FPS selalu 30 di kedua preset.
-- Bundle, geometri, dan font sistem cukup untuk preview dan ekspor setelah aplikasi dan modul renderer termuat. Video dan file proyek berada di perangkat. Remotion 4.0.546 mencoba mengirim telemetri penggunaan lisensi yang mencakup origin dan hasil render. Ekspor tetap berjalan saat telemetri tidak dapat terkirim. Konfigurasi `free-license` digunakan untuk Sesi 1 pribadi. [Telemetri Remotion](https://www.remotion.dev/docs/telemetry) · [FAQ lisensi](https://www.remotion.dev/docs/license/faq)
+- Prioritas encoder perangkat keras adalah permintaan ke browser. Bila preflight menolaknya, atau encoder gagal saat render, aplikasi dapat mencoba konfigurasi dengan encoder pilihan browser. Dukungan 540p dan 720p diuji terpisah untuk dimensi dan FPS proyek aktif.
+- Bundle, geometri, dan font sistem cukup untuk preview dan ekspor setelah aplikasi dan modul renderer termuat. Video dan JSON diproses di perangkat. Remotion 4.0.546 mencoba mengirim telemetri penggunaan lisensi yang mencakup origin dan hasil render. Ekspor tetap berjalan saat telemetri tidak dapat terkirim. Konfigurasi `free-license` digunakan untuk penggunaan pribadi. [Telemetri Remotion](https://www.remotion.dev/docs/telemetry) · [FAQ lisensi](https://www.remotion.dev/docs/license/faq)
 - Status dan hasil aktual ada di [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).

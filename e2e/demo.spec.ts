@@ -18,7 +18,7 @@ test('mobile preview plays and seeks without horizontal scrolling', async ({ pag
   await openDemo(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   test.skip(await diagnostic(page, 'WebGL2').textContent() !== 'Tersedia', 'Browser has no WebGL2 context.');
-  await expect(page.locator('.portrait canvas')).toBeVisible();
+  await expect(page.locator('.preview-frame canvas')).toBeVisible();
   await page.getByRole('button', { name: 'Putar preview' }).click();
   await expect.poll(async () => Number(await page.getByRole('slider').inputValue())).toBeGreaterThan(0);
   await page.getByRole('button', { name: 'Jeda preview' }).click();

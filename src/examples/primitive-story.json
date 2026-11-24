@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "title": "Observatorium Prisma",
+  "aspectRatio": "9:16",
+  "fps": 30,
+  "scenes": [
+    {
+      "id": "prisma",
+      "name": "Prisma bangkit",
+      "durationFrames": 90,
+      "world": {
+        "background": "#142547",
+        "ground": true,
+        "groundColor": "#294768",
+        "fog": { "color": "#142547", "near": 7, "far": 22 }
+      },
+      "lighting": {
+        "ambient": { "color": "#B8DCF9", "intensity": 0.75 },
+        "directional": { "color": "#FFEBCC", "intensity": 2.5, "position": [4, 8, 6] },
+        "fill": { "color": "#3A9BFF", "intensity": 1.5, "position": [-3, 4, -5] }
+      },
+      "camera": {
+        "type": "perspective",
+        "keyframes": [
+          { "frame": 0, "position": [3.7, 3.1, 6.1], "target": [0, 1.3, 0], "fov": 43 },
+          { "frame": 89, "position": [1.5, 2.7, 6.3], "target": [0, 1.6, 0], "fov": 38, "ease": "easeInOut" }
+        ]
+      },
+      "nodes": [
+        {
+          "id": "platform",
+          "kind": "mesh",
+          "position": [0, 0.23, 0],
+          "geometry": { "type": "cylinder", "radiusTop": 1.25, "radiusBottom": 1.55, "height": 0.46 },
+          "material": { "color": "#537195", "roughness": 0.52, "metalness": 0.15 }
+        },
+        {
+          "id": "housing",
+          "kind": "mesh",
+          "position": [0, 0.53, 0],
+          "rotation": [0, 35, 0],
+          "geometry": { "type": "box", "size": [1, 0.15, 1] },
+          "material": { "color": "#7FBDD3" }
+        },
+        {
+          "id": "prism-top",
+          "parentId": "prism",
+          "kind": "mesh",
+          "position": [0, 0.45, 0],
+          "geometry": { "type": "cone", "radius": 0.53, "height": 0.9 },
+          "material": { "color": "#59EFF9", "roughness": 0.35, "emissive": "#127698", "emissiveIntensity": 0.4 }
+        },
+        {
+          "id": "prism",
+          "kind": "group",
+          "tracks": [
+            {
+              "property": "position",
+              "keyframes": [
+                { "frame": 0, "value": [0, 1.1, 0] },
+                { "frame": 89, "value": [0, 1.85, 0], "ease": "easeOut" }
+              ]
+            },
+            {
+              "property": "rotation",
+              "keyframes": [
+                { "frame": 0, "value": [0, 0, -8] },
+                { "frame": 89, "value": [0, 180, 12], "ease": "easeInOut" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "prism-bottom",
+          "parentId": "prism",
+          "kind": "mesh",
+          "position": [0, -0.25, 0],
+          "rotation": [180, 0, 0],
+          "geometry": { "type": "cone", "radius": 0.53, "height": 0.5 },
+          "material": { "color": "#2485D4", "roughness": 0.35 }
+        },
+        {
+          "id": "ring",
+          "parentId": "prism",
+          "kind": "mesh",
+          "rotation": [65, 0, 0],
+          "geometry": { "type": "torus", "radius": 0.92, "tube": 0.045 },
+          "material": { "color": "#FFD78D", "emissive": "#BF6228", "emissiveIntensity": 0.65 }
+        }
+      ],
+      "captions": [
+        { "startFrame": 0, "endFrame": 48, "text": "Prisma mulai terangkat.", "placement": "bottom" },
+        { "startFrame": 48, "endFrame": 90, "text": "Cincin menangkap cahaya.", "placement": "bottom" }
+      ]
+    },
+    {
+      "id": "orbit",
+      "name": "Orbit satelit",
+      "durationFrames": 90,
+      "world": { "background": "#38204D", "ground": true, "groundColor": "#553360" },
+      "camera": {
+        "type": "orthographic",
+        "keyframes": [
+          { "frame": 0, "position": [4, 3.5, 6], "target": [0, 1.2, 0], "orthoSize": 6.8 },
+          { "frame": 89, "position": [2.3, 2.8, 6], "target": [0, 1.45, 0], "orthoSize": 5.9, "ease": "easeInOut" }
+        ]
+      },
+      "nodes": [
+        {
+          "id": "plinth",
+          "kind": "mesh",
+          "position": [0, 0.24, 0],
+          "geometry": { "type": "cylinder", "radiusTop": 1.23, "radiusBottom": 1.5, "height": 0.48 },
+          "material": { "color": "#82678C" }
+        },
+        {
+          "id": "core",
+          "kind": "mesh",
+          "position": [0, 1.52, 0],
+          "geometry": { "type": "sphere", "radius": 0.66 },
+          "material": { "color": "#FE9C68", "emissive": "#A23B2A", "emissiveIntensity": 0.45 }
+        },
+        {
+          "id": "rail",
+          "kind": "mesh",
+          "position": [0, 1.52, 0],
+          "rotation": [90, 0, 0],
+          "geometry": { "type": "torus", "radius": 1.18, "tube": 0.045 },
+          "material": { "color": "#E7A6FF", "emissive": "#833B9E", "emissiveIntensity": 0.45 }
+        },
+        {
+          "id": "pivot",
+          "kind": "group",
+          "position": [0, 1.52, 0],
+          "tracks": [
+            {
+              "property": "rotation",
+              "keyframes": [
+                { "frame": 0, "value": [0, -35, 0] },
+                { "frame": 89, "value": [0, 295, 0] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "satellite",
+          "parentId": "pivot",
+          "kind": "mesh",
+          "position": [1.18, 0, 0],
+          "rotation": [25, 0, 0],
+          "geometry": { "type": "capsule", "radius": 0.17, "length": 0.32 },
+          "material": { "color": "#FFE8B0", "roughness": 0.45 }
+        }
+      ],
+      "captions": [
+        { "startFrame": 0, "endFrame": 90, "text": "Satelit memasuki orbit.", "placement": "top", "color": "#FFECD5" }
+      ]
+    }
+  ]
+}
