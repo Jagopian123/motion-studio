@@ -1,0 +1,555 @@
+{
+  "schemaVersion": 1,
+  "title": "Robot dan Kristal Ajaib",
+  "aspectRatio": "9:16",
+  "fps": 30,
+  "scenes": [
+    {
+      "id": "arrival",
+      "name": "Perjalanan dimulai",
+      "durationFrames": 150,
+      "world": {
+        "background": "#172554",
+        "ground": true,
+        "groundColor": "#475569"
+      },
+      "lighting": {
+        "ambient": {
+          "color": "#FFFFFF",
+          "intensity": 0.65
+        },
+        "directional": {
+          "color": "#FDE68A",
+          "intensity": 2,
+          "position": [
+            4,
+            8,
+            5
+          ]
+        }
+      },
+      "camera": {
+        "type": "perspective",
+        "keyframes": [
+          {
+            "frame": 0,
+            "position": [
+              6,
+              4,
+              8
+            ],
+            "target": [
+              0,
+              1,
+              0
+            ],
+            "fov": 45
+          },
+          {
+            "frame": 149,
+            "position": [
+              3,
+              3,
+              6
+            ],
+            "target": [
+              0,
+              1,
+              1
+            ],
+            "fov": 40,
+            "ease": "easeInOut"
+          }
+        ]
+      },
+      "nodes": [
+        {
+          "id": "hero",
+          "kind": "preset",
+          "preset": "robot",
+          "position": [
+            -2,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            90,
+            0
+          ],
+          "colors": {
+            "primary": "#E2E8F0",
+            "secondary": "#2563EB",
+            "accent": "#FBBF24"
+          },
+          "action": {
+            "name": "walk",
+            "speed": 1
+          },
+          "tracks": [
+            {
+              "property": "position",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": [
+                    -2,
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "frame": 149,
+                  "value": [
+                    1.5,
+                    0,
+                    0
+                  ],
+                  "ease": "linear"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "tree1",
+          "kind": "preset",
+          "preset": "tree",
+          "position": [
+            -3,
+            0,
+            -2
+          ],
+          "colors": {
+            "primary": "#0D9488",
+            "secondary": "#78350F"
+          }
+        },
+        {
+          "id": "tree2",
+          "kind": "preset",
+          "preset": "tree",
+          "position": [
+            3,
+            0,
+            -3
+          ],
+          "scale": [
+            1.2,
+            1.2,
+            1.2
+          ],
+          "colors": {
+            "primary": "#0D9488",
+            "secondary": "#78350F"
+          }
+        },
+        {
+          "id": "rock1",
+          "kind": "preset",
+          "preset": "rock",
+          "position": [
+            2,
+            0,
+            2
+          ]
+        }
+      ],
+      "captions": [
+        {
+          "startFrame": 0,
+          "endFrame": 150,
+          "text": "Di planet yang jauh, sebuah robot memulai petualangan.",
+          "placement": "bottom"
+        }
+      ]
+    },
+    {
+      "id": "discovery",
+      "name": "Menemukan kristal",
+      "durationFrames": 150,
+      "world": {
+        "background": "#312E81",
+        "ground": true,
+        "groundColor": "#475569"
+      },
+      "lighting": {
+        "ambient": {
+          "color": "#FFFFFF",
+          "intensity": 0.55
+        },
+        "directional": {
+          "color": "#A5F3FC",
+          "intensity": 2.2,
+          "position": [
+            4,
+            8,
+            5
+          ]
+        }
+      },
+      "camera": {
+        "type": "perspective",
+        "keyframes": [
+          {
+            "frame": 0,
+            "position": [
+              5,
+              3,
+              7
+            ],
+            "target": [
+              0.8,
+              1.0,
+              0
+            ],
+            "fov": 42
+          },
+          {
+            "frame": 149,
+            "position": [
+              3.5,
+              2.5,
+              5
+            ],
+            "target": [
+              0.8,
+              1.0,
+              0
+            ],
+            "fov": 35,
+            "ease": "easeInOut"
+          }
+        ]
+      },
+      "nodes": [
+        {
+          "id": "hero",
+          "kind": "preset",
+          "preset": "robot",
+          "position": [
+            -1,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            90,
+            0
+          ],
+          "colors": {
+            "primary": "#E2E8F0",
+            "secondary": "#2563EB",
+            "accent": "#FBBF24"
+          },
+          "action": {
+            "name": "idle",
+            "speed": 1
+          }
+        },
+        {
+          "id": "pedestal",
+          "kind": "mesh",
+          "geometry": {
+            "type": "cylinder",
+            "radiusTop": 0.6,
+            "radiusBottom": 0.8,
+            "height": 0.5
+          },
+          "material": {
+            "color": "#64748B"
+          },
+          "position": [
+            1,
+            0.25,
+            0
+          ]
+        },
+        {
+          "id": "crystal",
+          "kind": "group",
+          "position": [
+            1,
+            1.1,
+            0
+          ],
+          "tracks": [
+            {
+              "property": "rotation",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": [
+                    0,
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "frame": 149,
+                  "value": [
+                    0,
+                    360,
+                    0
+                  ],
+                  "ease": "linear"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "crystal-top",
+          "parentId": "crystal",
+          "kind": "mesh",
+          "geometry": {
+            "type": "cone",
+            "radius": 0.35,
+            "height": 0.8
+          },
+          "material": {
+            "color": "#22D3EE",
+            "emissive": "#0E7490",
+            "emissiveIntensity": 0.7
+          },
+          "position": [
+            0,
+            0.4,
+            0
+          ]
+        },
+        {
+          "id": "crystal-bottom",
+          "parentId": "crystal",
+          "kind": "mesh",
+          "geometry": {
+            "type": "cone",
+            "radius": 0.35,
+            "height": 0.6
+          },
+          "material": {
+            "color": "#67E8F9",
+            "emissive": "#0E7490",
+            "emissiveIntensity": 0.7
+          },
+          "position": [
+            0,
+            -0.3,
+            0
+          ],
+          "rotation": [
+            180,
+            0,
+            0
+          ]
+        }
+      ],
+      "captions": [
+        {
+          "startFrame": 0,
+          "endFrame": 150,
+          "text": "Ia menemukan kristal yang bersinar terang.",
+          "placement": "bottom"
+        }
+      ]
+    },
+    {
+      "id": "joy",
+      "name": "Harapan baru",
+      "durationFrames": 150,
+      "world": {
+        "background": "#1E3A8A",
+        "ground": true,
+        "groundColor": "#475569"
+      },
+      "lighting": {
+        "ambient": {
+          "color": "#FFFFFF",
+          "intensity": 0.7
+        },
+        "directional": {
+          "color": "#FDE68A",
+          "intensity": 2.5,
+          "position": [
+            4,
+            8,
+            5
+          ]
+        }
+      },
+      "camera": {
+        "type": "perspective",
+        "keyframes": [
+          {
+            "frame": 0,
+            "position": [
+              2,
+              2.5,
+              6
+            ],
+            "target": [
+              0,
+              1.2,
+              0
+            ],
+            "fov": 40
+          },
+          {
+            "frame": 149,
+            "position": [
+              0,
+              2.5,
+              5
+            ],
+            "target": [
+              0,
+              1.2,
+              0
+            ],
+            "fov": 38,
+            "ease": "easeInOut"
+          }
+        ]
+      },
+      "nodes": [
+        {
+          "id": "hero",
+          "kind": "preset",
+          "preset": "robot",
+          "colors": {
+            "primary": "#E2E8F0",
+            "secondary": "#2563EB",
+            "accent": "#FBBF24"
+          },
+          "action": {
+            "name": "wave",
+            "speed": 1
+          }
+        },
+        {
+          "id": "crystal",
+          "kind": "group",
+          "position": [
+            1,
+            1.4,
+            0
+          ],
+          "tracks": [
+            {
+              "property": "position",
+              "keyframes": [
+                {
+                  "frame": 0,
+                  "value": [
+                    1,
+                    1.4,
+                    0
+                  ]
+                },
+                {
+                  "frame": 75,
+                  "value": [
+                    1,
+                    1.8,
+                    0
+                  ],
+                  "ease": "easeInOut"
+                },
+                {
+                  "frame": 149,
+                  "value": [
+                    1,
+                    1.4,
+                    0
+                  ],
+                  "ease": "easeInOut"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "crystal-top",
+          "parentId": "crystal",
+          "kind": "mesh",
+          "geometry": {
+            "type": "cone",
+            "radius": 0.35,
+            "height": 0.8
+          },
+          "material": {
+            "color": "#22D3EE",
+            "emissive": "#0E7490",
+            "emissiveIntensity": 0.7
+          },
+          "position": [
+            0,
+            0.4,
+            0
+          ]
+        },
+        {
+          "id": "crystal-bottom",
+          "parentId": "crystal",
+          "kind": "mesh",
+          "geometry": {
+            "type": "cone",
+            "radius": 0.35,
+            "height": 0.6
+          },
+          "material": {
+            "color": "#67E8F9",
+            "emissive": "#0E7490",
+            "emissiveIntensity": 0.7
+          },
+          "position": [
+            0,
+            -0.3,
+            0
+          ],
+          "rotation": [
+            180,
+            0,
+            0
+          ]
+        },
+        {
+          "id": "tree1",
+          "kind": "preset",
+          "preset": "tree",
+          "position": [
+            -2.5,
+            0,
+            -2
+          ],
+          "colors": {
+            "primary": "#0D9488",
+            "secondary": "#78350F"
+          }
+        },
+        {
+          "id": "tree2",
+          "kind": "preset",
+          "preset": "tree",
+          "position": [
+            3,
+            0,
+            -2
+          ],
+          "colors": {
+            "primary": "#0D9488",
+            "secondary": "#78350F"
+          }
+        }
+      ],
+      "captions": [
+        {
+          "startFrame": 0,
+          "endFrame": 150,
+          "text": "Penemuan kecil bisa membawa harapan besar.",
+          "placement": "bottom"
+        }
+      ]
+    }
+  ]
+}
